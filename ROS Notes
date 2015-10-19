@@ -1,0 +1,69 @@
+1. start 'roscore' in a terminal
+2. source /opt/ros/indigo/setup.bash in order to allow roscd and other ROS commands to work in each terminal. IN ~./bashrc NOT REQUIRED
+3. in directory, must source ./devel/setup.bash to overlay this workspace on top of your environment, roscd etc will not work until this is done. To get to directory cd needed, not roscd.
+
+
+
+
+New packages need package.xml file that contains information about dependencies, maintainer contact info, and licenses.
+
+Building the package adds the devel/build folders into workspace
+	devel - executables and libraries
+	build - cmake and make configure and build package
+
+Nodes: executable using ROS to communicate with other nodes
+Messages: data type used when subscribing/publishing to topic
+Topics: Nodes can publish/subscribe to messages from a topic
+Master: Name service of ROS, helps nodes find eachother
+rosout: ROS's stdout/stderr
+roscore: Allows everything to talk
+
+Client libraries :rospy, roscpp (.py + C++)
+
+2 Styles of communications, over:
+	topics   - nodes publish data for other nodes to subscribe to
+	services - nodes request and receive a response
+
+msg files describe fields of a ROS message & used to make source code in other languages. include information type and variable name
+srv files describe services and are made up of a request and a response
+
+Make python script into executable "chmod +x [name.py]"
+
+
+
+
+
+ROS Tools 
+rospack   - Gives you information about a package. 
+	    find [package-name] shows path to package
+	    depends [package-name] gives you dependencies from .xml 
+roscd     - Changes the directory to that of the locationname without 		    full path. "roscd locationname/subdirectory" if sub is 		    desired
+rosls	  - Returns 'ls' for ROS useful files
+rosnode   - list gives information, kill kills, ping sees responses
+rosrun    - runs nodes "rosrun [package] [node]"
+	    "rosrun rqt_graph rqt_graph" gives you visual of node comms
+	    "rosrun rqt_plot rqt_plot" plots the coms data
+	    "rosrun rqt_console rqt_console" shows outputs from nodes 
+	    "rosrun rqt_logger_level rqt_logger_level" can change 		    verbose of messages
+rostopic  - shows comms information in terminal
+rosservice - Gives information about services
+rosparam  - Global parameters for ROS, can add and subtract
+roslaunch - launches multiple ros nodes locally and remotely
+rosed     - edit files in terminal "rosed [package] [filename]" in vim
+rosmsg    - shows message type for a variable "show tutorials/Num"
+		returns "int 64 num"
+rossrv    - shows service variable types like rosmsg
+roscp     - copies argument information to new location
+	    "roscp [package] [file] [copy path]"
+rodbag    - Makes a "bag" to capture data from nodes for playback
+rosdep    - Downloads all system dependence via "rosdep install 	    [package]"
+roswtf    - tries to throw you any errors it detects 
+
+Linux Tools 
+pwd     - Returns current path 
+echo    - Echo's the argument on the screen $ = %f in fprintf
+	- "echo $ROS_PACKAGE_PATH" returns what paths are under ros use
+
+
+ROS talker and listener floats are different, one is a double (talker) and the listeners accuracy is better than that of the recorded times meaning it uses the computers internal clock
+
