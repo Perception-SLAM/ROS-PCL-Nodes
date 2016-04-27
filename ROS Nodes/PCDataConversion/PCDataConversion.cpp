@@ -29,9 +29,17 @@
 #include <boost/random/normal_distribution.hpp> 
 #include <pcl/filters/voxel_grid.h>
 #include <pcl/common/projection_matrix.h>
+#include <gazebo_msgs/ModelStates.h>
+#include <geometry_msgs/Pose.h>
+#include <geometry_msgs/Twist.h>
+#include <std_msgs/Header.h>
+#include <geometry_msgs/Point.h>
+#include <geometry_msgs/Quaternion.h>
 
 
+// globals
 ros::Publisher publish_transformation;
+gazebo_msgs::ModelStates state_pose; 
 
 void callback(const sensor_msgs::PointCloud2& input_cloud)
 {
@@ -84,24 +92,48 @@ void callback(const sensor_msgs::PointCloud2& input_cloud)
 	sor.setInputCloud (transformed_cloud_XYZ);
 	sor.setLeafSize (0.045f, 0.045f, 0.045f);
 	sor.filter (*thinned_cloud);
+	
+	// transforming thinned_cloud to a global frame by taking pose and offsetting in orientation/translation
+	
+	Eigen::Vector3d translation;  //translation offset
+	translation[0] = state_pose.pose[2].position.x; //.x.y.z
+	translation[1] = state_pose.pose[2].position.y; 
+	translation[2] = state_pose.pose[2].position.z; 
+
+	Eigen::Quaterniond quat;     // orientation offset
+	quat.w() = state_pose.pose[2].orientation.w; //.w.x.y.z
+	quat.x() = state_pose.pose[2].orientation.x; 
+	quat.y() = state_pose.pose[2].orientation.y; 
+	quat.z() = state_pose.pose[2].orientation.z;
+	
+							    // transform using offsets and PCL
+	pcl::PointCloud<pcl::PointXYZ>::Ptr rotated_cloud (new pcl::PointCloud<pcl::PointXYZ> ());
+	pcl::transformPointCloud(*thinned_cloud, *rotated_cloud, translation, quat);
+	
 
 	// storing a global point cloud 
-
-	pcl::PointCloud<pcl::PointXYZ> global_cloud;
-	global_cloud.operator+(const PointCloud<pcl::PointXYZ>& thinned_cloud); //const error, pointer??
-	
-	// need back to pointers
-	//pcl::PointCloud<pcl::PointXYZ>::Ptr thinned_cloud(&thinned_cloud);
+	static pcl::PointCloud<pcl::PointXYZ> global_cloud;
+	global_cloud += *rotated_cloud;
 
 	// convert transformed cloud to PointCloud2 for ROS
 	sensor_msgs::PointCloud2 transformed_cloud_2;
-	pcl::toROSMsg(*thinned_cloud, transformed_cloud_2);
+	pcl::toROSMsg(global_cloud, transformed_cloud_2); //*thinned_cloud
+	
+	// write the frame to be transformed with respect to and time to header
+    transformed_cloud_2.header.stamp = ros::Time::now();
+    transformed_cloud_2.header.frame_id = "front_laser";
 	
 	// publish results
 	publish_transformation.publish(transformed_cloud_2);
 
 
 }
+
+void callback_2(const gazebo_msgs::ModelStates& Model_State)
+{
+	::state_pose = Model_State; 
+}
+
 int main(int argc, char **argv)
 {
 
@@ -110,6 +142,7 @@ int main(int argc, char **argv)
 
 	publish_transformation = PCDataConversion.advertise<sensor_msgs::PointCloud2>("/camera/depth/transformedPoints", 1000);
 	ros::Subscriber sub = PCDataConversion.subscribe("/camera/depth/points",1000,callback);
+	ros::Subscriber sub_pose = PCDataConversion.subscribe("/gazebo/model_states",1000,callback_2);
 	
 	while(ros::ok()){
 		ros::spinOnce();
